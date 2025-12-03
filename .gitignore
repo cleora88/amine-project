@@ -8,6 +8,35 @@ coverage/
 
 # Vite/React
 .vite/**
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Application Data
+data/
+logs/
+*.log
+
+# Vector Database
+vector_db/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
 *.local
 
 # Logs
