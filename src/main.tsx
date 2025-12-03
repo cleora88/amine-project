@@ -1,9 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import MedicalTriageApp from '../medical_triage_app'
+import MedicalTriageUI from '../medical_triage_ui'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <MedicalTriageApp />
+    <MedicalTriageUI />
   </React.StrictMode>,
 )
