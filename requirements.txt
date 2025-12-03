@@ -2,3 +2,7 @@ fastapi
 uvicorn[standard]
 pydantic
 requests
+ollama
+faiss-cpu
+neo4j
+sentence-transformers

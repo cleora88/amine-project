@@ -1,207 +1,171 @@
 """
-Medical Triage Engine Module
+Medical Triage Engine Module - AI-Powered Version
 
-This module provides a rule-based medical triage system that analyzes patient symptoms
-and determines appropriate urgency levels (emergency, consultation, self-care).
+Integrates:
+- Ollama AI for intelligent symptom analysis
+- FAISS Vector Database for medical knowledge retrieval
+- Neo4j Graph Database for symptom-disease relationships
 """
 
-from typing import Optional, Dict, List, Tuple
-import re
+from typing import Optional, Dict, List
 import logging
+from ai_service import AIService
+from vector_db_service import VectorDBService
+from graph_db_service import GraphDBService
 
 logger = logging.getLogger(__name__)
 
 
 class TriageEngine:
     """
-    Rule-based triage engine for medical symptom analysis.
+    AI-powered triage engine for medical symptom analysis.
     
-    Classifies patient symptoms into three urgency levels:
-    - urgence: Emergency requiring immediate medical attention
-    - consultation: Requires healthcare professional within 24-48h
-    - auto-soin: Self-care appropriate for mild symptoms
-    
-    Uses pattern matching against predefined symptom patterns with
-    confidence scoring based on number and severity of matches.
+    Combines three AI technologies:
+    1. Ollama LLM for natural language understanding and analysis
+    2. Vector DB for semantic search of medical knowledge
+    3. Graph DB for symptom-disease relationship mapping
     """
 
-    EMERGENCY_PATTERNS: List[str] = [
-        r"\bchest pain\b",
-        r"radiating to left arm",
-        r"difficulty breathing|shortness of breath",
-        r"slurred speech|face droop|weakness on one side|one side of body",
-        r"sudden weakness"
-    ]
-
-    CONSULTATION_PATTERNS: List[str] = [
-        r"\bfever\b.*(3\s*days|three\s*days|39)",
-        r"infected wound|wound.*(red|redness|swelling|pus)"
-    ]
-
-    SELF_CARE_PATTERNS: List[str] = [
-        r"common cold|runny nose",
-        r"mild headache|slight headache|feeling tired"
-    ]
-
     def __init__(self) -> None:
-        """Initialize the triage engine with predefined patterns."""
-        logger.info("TriageEngine initialized with pattern-based rules")
-
-    def _detect(self, text: str, patterns: List[str]) -> List[str]:
-        """
-        Detect matching patterns in symptom text.
+        """Initialize the triage engine with AI services."""
+        logger.info("Initializing AI-powered TriageEngine...")
         
-        Args:
-            text: Patient symptom description
-            patterns: List of regex patterns to match
-            
-        Returns:
-            List of matched pattern strings
-        """
-        found: List[str] = []
-        for pattern in patterns:
-            if re.search(pattern, text, flags=re.IGNORECASE):
-                found.append(pattern)
-        return found
-
-    def _extract_symptoms(self, text: str) -> List[str]:
-        """
-        Extract specific symptoms from text using keyword matching.
+        try:
+            # Initialize AI service (Ollama)
+            self.ai_service = AIService(model="llama3.2")
+            logger.info("✓ Ollama AI service initialized")
+        except Exception as e:
+            logger.warning(f"Ollama AI not available: {e}")
+            self.ai_service = None
         
-        Args:
-            text: Patient symptom description
-            
-        Returns:
-            List of identified symptom keywords
-        """
-        detected_symptoms: List[str] = []
+        try:
+            # Initialize Vector Database (FAISS)
+            self.vector_db = VectorDBService()
+            logger.info("✓ FAISS vector database initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize vector database: {e}")
+            self.vector_db = None
         
-        symptom_keywords: List[Tuple[str, str]] = [
-            (r"chest pain", "chest pain"),
-            (r"left arm", "arm radiation"),
-            (r"breath|breathing", "breathing difficulty"),
-            (r"slurred speech|weakness", "neurological deficit"),
-            (r"fever|39", "fever"),
-            (r"cough", "cough"),
-            (r"infected wound|wound", "wound infection"),
-            (r"runny nose|cold", "common cold"),
-            (r"headache", "headache"),
-        ]
+        try:
+            # Initialize Graph Database (Neo4j)
+            self.graph_db = GraphDBService(
+                uri="bolt://localhost:7687",
+                user="neo4j",
+                password="password"  # TODO: Use environment variable
+            )
+            logger.info("✓ Neo4j graph database initialized")
+        except Exception as e:
+            logger.warning(f"Neo4j not available: {e}. Using fallback.")
+            self.graph_db = None
         
-        for pattern, symptom_name in symptom_keywords:
-            if re.search(pattern, text, re.IGNORECASE):
-                detected_symptoms.append(symptom_name)
-        
-        return detected_symptoms if detected_symptoms else ["unspecified"]
+        logger.info("TriageEngine initialization complete")
 
     def analyze(
         self, 
         symptoms: str, 
         age: Optional[int] = None, 
         allergies: Optional[str] = None
-    ) -> Dict[str, any]:
+    ) -> Dict:
         """
-        Analyze patient symptoms and determine urgency level.
+        Analyze patient symptoms using AI and knowledge bases.
         
         Args:
             symptoms: Patient symptom description
-            age: Patient age (optional, for future risk stratification)
-            allergies: Known allergies (optional, for future medication guidance)
+            age: Patient age (optional)
+            allergies: Known allergies (optional)
             
         Returns:
-            Dictionary containing:
-                - urgency_level: "urgence" | "consultation" | "auto-soin"
-                - confidence: Float between 0-1
-                - advice: Professional medical guidance string
-                - detected_symptoms: List of identified symptoms
-                
-        Raises:
-            ValueError: If symptoms string is empty or invalid
+            Dict with urgency_level, confidence, advice, detected_symptoms
         """
-        if not symptoms or not symptoms.strip():
-            logger.warning("Empty symptoms provided to analyze()")
-            raise ValueError("Symptoms cannot be empty")
+        logger.info(f"Analyzing symptoms: {symptoms[:50]}...")
         
-        text = symptoms.strip()
-        logger.info(f"Analyzing symptoms: {text[:100]}...")
-
-        # Pattern detection
-        emergency_hits = self._detect(text, self.EMERGENCY_PATTERNS)
-        consultation_hits = self._detect(text, self.CONSULTATION_PATTERNS)
-        selfcare_hits = self._detect(text, self.SELF_CARE_PATTERNS)
-
-        detected_symptoms = self._extract_symptoms(text)
-
-        # Urgency classification with confidence scoring
-        if emergency_hits:
-            urgency = "urgence"
-            confidence = 0.9 if len(emergency_hits) >= 2 else 0.85
-            advice = (
-                "Emergency signs detected. Call your local emergency number or go to the nearest ER immediately. "
-                "Do not delay seeking care."
-            )
-            logger.warning(f"EMERGENCY detected: {emergency_hits}")
-        elif consultation_hits:
-            urgency = "consultation"
-            confidence = 0.7
-            advice = (
-                "Your symptoms suggest you should see a healthcare professional soon. "
-                "Book a consultation within 24–48 hours or sooner if symptoms worsen."
-            )
-            logger.info(f"Consultation recommended: {consultation_hits}")
-        else:
-            urgency = "auto-soin"
-            confidence = 0.7 if selfcare_hits else 0.6
-            advice = (
-                "Symptoms appear mild. Rest, stay hydrated, and consider over-the-counter remedies. "
-                "Seek medical care if symptoms persist or worsen."
-            )
-            logger.info(f"Self-care recommended: confidence={confidence}")
-
-        result = {
-            "urgency_level": urgency,
-            "confidence": float(confidence),
-            "advice": advice,
-            "detected_symptoms": detected_symptoms,
+        # 1. Get relevant medical knowledge from Vector DB
+        relevant_knowledge = []
+        if self.vector_db:
+            try:
+                relevant_knowledge = self.vector_db.get_relevant_knowledge(symptoms, k=3)
+                logger.info(f"Retrieved {len(relevant_knowledge)} relevant documents from vector DB")
+            except Exception as e:
+                logger.warning(f"Vector DB query failed: {e}")
+        
+        # 2. Query Graph DB for symptom-disease relationships
+        graph_insights = []
+        if self.graph_db:
+            try:
+                # Extract simple symptom keywords for graph query
+                symptom_keywords = symptoms.lower().split()
+                graph_insights = self.graph_db.find_related_diseases(symptom_keywords)
+                logger.info(f"Found {len(graph_insights)} related diseases in graph DB")
+            except Exception as e:
+                logger.warning(f"Graph DB query failed: {e}")
+        
+        # 3. Use AI for comprehensive analysis
+        if self.ai_service:
+            try:
+                # Add context from knowledge bases to AI prompt
+                context_info = ""
+                if relevant_knowledge:
+                    context_info += "\n\nRelevant medical knowledge:\n"
+                    for doc in relevant_knowledge[:2]:
+                        context_info += f"- {doc['text']}\n"
+                
+                if graph_insights:
+                    context_info += "\n\nRelated conditions from knowledge graph:\n"
+                    for insight in graph_insights[:3]:
+                        context_info += f"- {insight['disease']} (urgency: {insight['urgency']}, confidence: {insight['confidence']:.2f})\n"
+                
+                enhanced_symptoms = symptoms + context_info
+                result = self.ai_service.analyze_symptoms(enhanced_symptoms, age, allergies)
+                logger.info(f"AI analysis complete: {result['urgency_level']}")
+                return result
+                
+            except Exception as e:
+                logger.error(f"AI analysis failed: {e}")
+        
+        # Fallback: Use graph insights if available
+        if graph_insights:
+            top_match = graph_insights[0]
+            return {
+                "urgency_level": top_match["urgency"],
+                "confidence": top_match["confidence"],
+                "advice": f"Based on knowledge graph: {top_match['disease']} detected. Please consult a healthcare professional for proper evaluation.",
+                "detected_symptoms": [symptoms[:100]]
+            }
+        
+        # Final fallback: Safe default
+        return {
+            "urgency_level": "MODERATE",
+            "confidence": 0.5,
+            "advice": "Unable to analyze with AI. Please consult a healthcare professional for proper evaluation of your symptoms.",
+            "detected_symptoms": [symptoms[:100]]
         }
-        
-        return result
 
     def chat(self, message: str) -> str:
         """
-        Provide conversational responses to patient questions.
+        Provide conversational responses to patient questions using AI.
         
         Args:
             message: Patient question or statement
             
         Returns:
-            Appropriate guidance response string
-            
-        Raises:
-            ValueError: If message is empty
+            AI-generated response string
         """
         if not message or not message.strip():
             logger.warning("Empty message provided to chat()")
             raise ValueError("Message cannot be empty")
         
-        msg = message.strip().lower()
-        logger.info(f"Chat request: {msg[:50]}...")
+        logger.info(f"Chat request: {message[:50]}...")
         
-        # Pattern-based responses
-        if any(keyword in msg for keyword in ["emergency", "urgent", "911", "112"]):
-            return "If you suspect an emergency, call your local emergency number immediately."
+        # Use AI service for chat
+        if self.ai_service:
+            try:
+                response = self.ai_service.chat(message)
+                return response
+            except Exception as e:
+                logger.error(f"AI chat failed: {e}")
         
-        if "fever" in msg:
-            return (
-                "A fever is a temporary rise in body temperature, often due to infection. "
-                "Seek care if it lasts more than 3 days, is ≥39°C, or if you have severe symptoms."
-            )
-        
-        if any(keyword in msg for keyword in ["doctor", "see a doctor", "consult"]):
-            return "See a healthcare professional if symptoms are severe, persistent, or concerning."
-        
-        # Default response
+        # Fallback response
         return (
-            "I'm here to help with general triage guidance. Describe your symptoms, duration, and severity, "
-            "and I'll suggest an urgency level."
+            "I'm here to help with medical triage guidance. Please describe your symptoms "
+            "for a comprehensive analysis, or consult a healthcare professional directly."
         )
