@@ -1,16 +1,28 @@
-# 🏥 Medical Triage Assistant
+# 🏥 Medical Triage Assistant - AI-Powered
 
-A professional medical triage system with AI-powered symptom analysis, built with FastAPI (Python) and React (TypeScript). Provides intelligent urgency classification, patient history tracking, and real-time performance monitoring.
+An intelligent medical triage system powered by cutting-edge AI technologies: **Ollama LLM**, **FAISS Vector Database**, and **Neo4j Graph Database**. Built with FastAPI (Python) and React (TypeScript) for professional medical symptom analysis.
 
 ## ✨ Features
 
-- **🚨 Smart Triage System**: Rule-based symptom analysis with three urgency levels
-  - **Urgence** (Emergency): Immediate medical attention required
-  - **Consultation**: Healthcare professional needed within 24-48h
-  - **Auto-soin** (Self-care): Mild symptoms, self-care appropriate
+### 🤖 AI-Powered Analysis
+- **Ollama LLM Integration**: Uses llama3.2 for natural language understanding of medical symptoms
+- **FAISS Vector Database**: Semantic search across medical knowledge base using sentence transformers
+- **Neo4j Graph Database**: Symptom-disease relationship mapping with confidence scoring
+- **Multi-AI Synthesis**: Combines all three AI sources for comprehensive triage decisions
 
-- **💬 AI Chat Assistant**: Conversational interface for medical guidance
-- **📊 Real-time Metrics Dashboard**: Performance monitoring and analytics
+### 🚨 Smart Triage System
+Three urgency levels with AI-driven confidence scoring:
+  - **EMERGENCY**: Immediate medical attention required (AI confidence: 0.85-0.95)
+  - **CONSULTATION**: Healthcare professional needed within 24-48h (AI confidence: 0.70-0.85)
+  - **SELF-CARE**: Mild symptoms, self-care appropriate (AI confidence: 0.60-0.75)
+
+### 💬 AI Chat Assistant
+- Conversational interface powered by Ollama LLM
+- Context-aware medical guidance
+- Natural language understanding of patient concerns
+
+### 📊 Advanced Features
+- **Real-time Metrics Dashboard**: Performance monitoring and analytics
 - **📝 Patient History Tracking**: Persistent triage history with GDPR compliance
 - **🎨 Modern UI**: Dark theme with gradient accents and smooth animations
 - **🔒 CORS Security**: Restricted to localhost for development safety
@@ -23,6 +35,8 @@ A professional medical triage system with AI-powered symptom analysis, built wit
 - **Python 3.8+** (Tested with Python 3.14)
 - **Node.js 16+** (Tested with Node.js 24.11.1)
 - **npm 7+** (Tested with npm 11.6.2)
+- **Ollama Desktop** ([Download](https://ollama.ai)) - For local AI inference
+- **Neo4j Database** ([Download](https://neo4j.com/download/) or use [Neo4j Aura](https://neo4j.com/cloud/aura-free/)) - Optional but recommended
 
 ### Installation
 
@@ -39,11 +53,29 @@ python -m venv venv
 # Activate virtual environment (PowerShell)
 .\venv\Scripts\Activate.ps1
 
-# Install dependencies
+# Install dependencies (includes AI libraries)
 pip install -r requirements.txt
 ```
 
-3. **Frontend Setup**
+3. **AI Services Setup**
+
+**Install Ollama:**
+```bash
+# Download and install Ollama from https://ollama.ai
+# Then pull the medical AI model:
+ollama pull llama3.2
+```
+
+**Install Neo4j (Optional):**
+```bash
+# Option 1: Docker (recommended)
+docker run -d --name neo4j -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/password neo4j:latest
+
+# Option 2: Download Neo4j Desktop from https://neo4j.com/download/
+# Or use free Neo4j Aura cloud: https://neo4j.com/cloud/aura-free/
+```
+
+4. **Frontend Setup**
 ```bash
 # Install Node dependencies
 npm install
@@ -51,32 +83,77 @@ npm install
 
 ### Running the Application
 
-**Terminal 1 - Backend Server:**
+**Terminal 1 - AI Services (if using local Neo4j):**
+```bash
+# Start Neo4j (if using Docker)
+docker start neo4j
+
+# Verify Ollama is running
+ollama list
+```
+
+**Terminal 2 - Backend Server:**
 ```bash
 # Activate virtual environment
 .\venv\Scripts\Activate.ps1
 
-# Start FastAPI server
+# Start FastAPI server (automatically initializes AI services)
 python backend_main.py
 ```
 Backend runs on: **http://localhost:8000**  
 API Documentation: **http://localhost:8000/docs**
 
-**Terminal 2 - Frontend Server:**
+**Terminal 3 - Frontend Server:**
 ```bash
 # Start Vite dev server
 npm run dev
 ```
 Frontend runs on: **http://localhost:3000**
 
+## 🤖 AI Architecture
+
+### Three-Layer AI Integration
+
+```
+Patient Input
+     ↓
+┌────────────────────────────────────────┐
+│      1. FAISS Vector Database          │
+│   Semantic search for relevant         │
+│   medical knowledge (top 3 matches)    │
+└────────────────────────────────────────┘
+     ↓
+┌────────────────────────────────────────┐
+│      2. Neo4j Graph Database           │
+│   Symptom-disease relationship         │
+│   mapping with confidence scores       │
+└────────────────────────────────────────┘
+     ↓
+┌────────────────────────────────────────┐
+│      3. Ollama LLM (llama3.2)         │
+│   Synthesizes all inputs for final     │
+│   triage decision with reasoning       │
+└────────────────────────────────────────┘
+     ↓
+AI-Powered Triage Result
+```
+
+### Graceful Fallback System
+- If Ollama unavailable: Uses graph database insights
+- If Neo4j unavailable: Uses vector database + safe defaults
+- System never fails - always provides safe medical guidance
+
 ## 📁 Project Structure
 
 ```
 amine-project/
 ├── backend_main.py              # FastAPI application server
-├── triage_engine.py             # Symptom analysis engine
+├── triage_engine.py             # AI-powered symptom analysis engine
+├── ai_service.py                # Ollama LLM wrapper
+├── vector_db_service.py         # FAISS vector database service
+├── graph_db_service.py          # Neo4j graph database service
 ├── monitoring_service.py        # Performance metrics tracking
-├── requirements.txt             # Python dependencies
+├── requirements.txt             # Python dependencies (includes AI libs)
 ├── package.json                 # Node.js dependencies
 ├── vite.config.ts               # Vite configuration
 ├── tsconfig.json                # TypeScript configuration
@@ -118,6 +195,122 @@ amine-project/
 ### Monitoring
 - **GET** `/metrics` - System performance metrics
 - **GET** `/health` - Health check with component status
+
+## 🤖 AI Configuration
+
+### Ollama Setup
+
+1. **Install Ollama**
+   - Download from [https://ollama.ai](https://ollama.ai)
+   - Windows: Run installer and follow prompts
+   - macOS: `brew install ollama`
+   - Linux: `curl https://ollama.ai/install.sh | sh`
+
+2. **Pull Medical AI Model**
+   ```bash
+   ollama pull llama3.2
+   ```
+
+3. **Verify Installation**
+   ```bash
+   ollama list  # Should show llama3.2
+   ollama run llama3.2 "Hello"  # Test the model
+   ```
+
+4. **Configuration** (in `ai_service.py`)
+   ```python
+   # Change model if needed
+   ai_service = AIService(model="llama3.2")  # or "llama3.1", "mistral", etc.
+   ```
+
+### Neo4j Setup
+
+**Option 1: Docker (Recommended)**
+```bash
+docker run -d \
+  --name neo4j \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/password \
+  neo4j:latest
+
+# Access Neo4j Browser at http://localhost:7474
+```
+
+**Option 2: Neo4j Desktop**
+1. Download from [https://neo4j.com/download/](https://neo4j.com/download/)
+2. Create a new database
+3. Set password to `password` (or update `graph_db_service.py`)
+4. Start the database
+
+**Option 3: Neo4j Aura (Cloud - Free Tier)**
+1. Sign up at [https://neo4j.com/cloud/aura-free/](https://neo4j.com/cloud/aura-free/)
+2. Create a free instance
+3. Copy connection URI and credentials
+4. Update `graph_db_service.py`:
+   ```python
+   GraphDBService(
+       uri="neo4j+s://xxxxx.databases.neo4j.io",
+       user="neo4j",
+       password="your-password"
+   )
+   ```
+
+**Configuration** (in `triage_engine.py`)
+```python
+# Update Neo4j credentials if needed
+self.graph_db = GraphDBService(
+    uri="bolt://localhost:7687",  # Change for cloud/remote
+    user="neo4j",                  # Change if different
+    password="password"            # Change to your password
+)
+```
+
+### FAISS Vector Database
+
+No installation needed! FAISS is included in `requirements.txt` and automatically initialized on first run. Data is stored in `data/vector_db/`.
+
+**Configuration** (in `vector_db_service.py`)
+```python
+# Change embedding model if needed
+self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Fast, 384-dim
+# Alternatives:
+# - 'all-mpnet-base-v2' (Slower, more accurate, 768-dim)
+# - 'paraphrase-multilingual-MiniLM-L12-v2' (Multilingual support)
+```
+
+### Testing AI Services
+
+**Check AI Service Status:**
+```bash
+# Start backend
+python backend_main.py
+
+# Check logs - should see:
+# ✓ Ollama AI service initialized
+# ✓ FAISS vector database initialized
+# ✓ Neo4j graph database initialized
+```
+
+**Test Each Service Individually:**
+```python
+# Test Ollama
+from ai_service import AIService
+ai = AIService()
+result = ai.analyze_symptoms("chest pain", age=45)
+print(result)
+
+# Test Vector DB
+from vector_db_service import VectorDBService
+vdb = VectorDBService()
+results = vdb.get_relevant_knowledge("fever", k=3)
+print(results)
+
+# Test Neo4j
+from graph_db_service import GraphDBService
+gdb = GraphDBService()
+diseases = gdb.find_related_diseases(["chest", "pain"])
+print(diseases)
+```
 
 ## 🛠️ Configuration
 
