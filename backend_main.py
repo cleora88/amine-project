@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from pydantic.functional_validators import field_validator
 from typing import Optional, List, Dict, Any
+from contextlib import asynccontextmanager
 import uvicorn
 from datetime import datetime
 import json
@@ -30,30 +31,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-# Initialize FastAPI app with comprehensive metadata
-app = FastAPI(
-    title="Medical Triage Assistant API",
-    description="Professional AI-powered medical triage system for symptom analysis and urgency classification",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_tags=[
-        {"name": "triage", "description": "Medical triage operations"},
-        {"name": "chat", "description": "AI assistant chat interface"},
-        {"name": "history", "description": "Patient history management"},
-        {"name": "health", "description": "System health and monitoring"},
-    ]
-)
-
-# CORS middleware - configured for production
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["*"],
-)
 
 # Initialize services with error handling
 try:
@@ -130,13 +107,16 @@ def anonymize_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return anonymized
 
 # Application Lifecycle Events
-@app.on_event("startup")
-async def startup_event() -> None:
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """
-    Application startup event handler
+    Application lifespan event handler
     
-    Initializes services, validates configuration, and logs startup status
+    Manages startup and shutdown tasks
     """
+    # Startup
     logger.info("=" * 80)
     logger.info("MEDICAL TRIAGE ASSISTANT - STARTUP SEQUENCE")
     logger.info("=" * 80)
@@ -164,14 +144,10 @@ async def startup_event() -> None:
     logger.info("=" * 80)
     logger.info("Server ready to accept connections")
     logger.info("=" * 80)
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    """
-    Application shutdown event handler
     
-    Performs cleanup tasks and logs final metrics before shutdown
-    """
+    yield
+    
+    # Shutdown
     logger.info("=" * 80)
     logger.info("MEDICAL TRIAGE ASSISTANT - SHUTDOWN SEQUENCE")
     logger.info("=" * 80)
@@ -193,6 +169,31 @@ async def shutdown_event() -> None:
     logger.info("=" * 80)
     logger.info("Server shutdown complete")
     logger.info("=" * 80)
+
+# Initialize FastAPI app with lifespan handler
+app = FastAPI(
+    title="Medical Triage Assistant API",
+    description="Professional AI-powered medical triage system for symptom analysis and urgency classification",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+    openapi_tags=[
+        {"name": "triage", "description": "Medical triage operations"},
+        {"name": "chat", "description": "AI assistant chat interface"},
+        {"name": "history", "description": "Patient history management"},
+        {"name": "health", "description": "System health and monitoring"},
+    ]
+)
+
+# CORS middleware - configured for production
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["*"],
+)
 
 @app.get("/", tags=["health"])
 async def root() -> Dict[str, str]:

@@ -4,32 +4,32 @@ import { AlertCircle, Activity, Clock, CheckCircle, TrendingUp, MessageSquare, T
 const API_BASE = 'http://localhost:8000';
 
 const MedicalTriageApp = () => {
-  const [activeTab, setActiveTab] = useState('triage');
+  const [activeTab, setActiveTab] = useState<'triage' | 'chat' | 'history' | 'metrics'>('triage');
   const [symptoms, setSymptoms] = useState('');
   const [age, setAge] = useState('');
   const [allergies, setAllergies] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [metrics, setMetrics] = useState(null);
+  const [result, setResult] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
   const [chatMessage, setChatMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState([]);
+  const [chatHistory, setChatHistory] = useState<{ type: 'user' | 'assistant' | 'error'; message: string }[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
 
-  const urgencyColors = {
-    'CRITICAL': 'from-red-500 to-rose-600',
-    'HIGH': 'from-orange-500 to-amber-600',
-    'MODERATE': 'from-yellow-500 to-orange-500',
-    'LOW': 'from-emerald-500 to-teal-600',
-    'MINIMAL': 'from-blue-500 to-cyan-600'
+  const urgencyColors: Record<string, string> = {
+    CRITICAL: 'from-red-500 to-rose-600',
+    HIGH: 'from-orange-500 to-amber-600',
+    MODERATE: 'from-yellow-500 to-orange-500',
+    LOW: 'from-emerald-500 to-teal-600',
+    MINIMAL: 'from-blue-500 to-cyan-600'
   };
 
-  const urgencyIcons = {
-    'CRITICAL': <AlertCircle className="w-8 h-8" />,
-    'HIGH': <Activity className="w-8 h-8" />,
-    'MODERATE': <Clock className="w-8 h-8" />,
-    'LOW': <CheckCircle className="w-8 h-8" />,
-    'MINIMAL': <TrendingUp className="w-8 h-8" />
+  const urgencyIcons: Record<string, JSX.Element> = {
+    CRITICAL: <AlertCircle className="w-8 h-8" />,
+    HIGH: <Activity className="w-8 h-8" />,
+    MODERATE: <Clock className="w-8 h-8" />,
+    LOW: <CheckCircle className="w-8 h-8" />,
+    MINIMAL: <TrendingUp className="w-8 h-8" />
   };
 
   useEffect(() => {
@@ -119,7 +119,7 @@ const MedicalTriageApp = () => {
     }
   };
 
-  const handleKeyPress = (e, action) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, action: () => void) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       action();
@@ -158,9 +158,9 @@ const MedicalTriageApp = () => {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                activeTab === tab.id
+                activeTab === (tab.id as any)
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200'
                   : 'text-slate-600 hover:bg-white/80'
               }`}
@@ -190,7 +190,7 @@ const MedicalTriageApp = () => {
                     onChange={(e) => setSymptoms(e.target.value)}
                     placeholder="Describe what you're experiencing in detail..."
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all resize-none"
-                    rows="6"
+                    rows={6}
                   />
                 </div>
 
@@ -205,8 +205,8 @@ const MedicalTriageApp = () => {
                       onChange={(e) => setAge(e.target.value)}
                       placeholder="Years"
                       className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
-                      min="0"
-                      max="120"
+                      min={0}
+                      max={120}
                     />
                   </div>
 
@@ -269,7 +269,7 @@ const MedicalTriageApp = () => {
 
                     <h4 className="text-xl font-bold text-slate-800 mb-4">Detected Symptoms</h4>
                     <div className="flex flex-wrap gap-2">
-                      {result.detected_symptoms.map((symptom, idx) => (
+                      {result.detected_symptoms.map((symptom: string, idx: number) => (
                         <span
                           key={idx}
                           className="px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 rounded-full text-sm font-medium border border-indigo-200"
@@ -287,7 +287,7 @@ const MedicalTriageApp = () => {
                   </div>
                 </>
               ) : (
-                <div className="bg-white rounded-3xl shadow-xl shadow-indigo-100/50 p-12 text-center">
+                <div className="bg:white rounded-3xl shadow-xl shadow-indigo-100/50 p-12 text-center">
                   <div className="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Activity className="w-12 h-12 text-indigo-600" />
                   </div>
@@ -336,7 +336,7 @@ const MedicalTriageApp = () => {
                 type="text"
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
-                onKeyPress={(e) => handleKeyPress(e, handleChat)}
+                onKeyDown={(e) => handleKeyPress(e as any, handleChat)}
                 placeholder="Ask a medical question..."
                 className="flex-1 px-6 py-4 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
                 disabled={chatLoading}
@@ -430,7 +430,7 @@ const MedicalTriageApp = () => {
   );
 };
 
-const MetricCard = ({ title, value, gradient }) => (
+const MetricCard = ({ title, value, gradient }: { title: string; value: string | number; gradient: string }) => (
   <div className={`bg-gradient-to-br ${gradient} rounded-3xl shadow-xl p-8 text-white`}>
     <h3 className="text-sm font-medium opacity-90 mb-2">{title}</h3>
     <p className="text-4xl font-bold">{value}</p>
